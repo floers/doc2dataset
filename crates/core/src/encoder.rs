@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-use html2text::from_read;
 use image::{self, DynamicImage};
 use pulldown_cmark::{html, Parser};
 use rayon::prelude::*;
@@ -558,7 +557,11 @@ fn markdown_to_text(md: &str) -> String {
 }
 
 fn html_to_plaintext(html_src: &str) -> String {
-    from_read(html_src.as_bytes(), 80)
+    html2text::config::plain()
+        .link_footnotes(false)
+        .no_link_wrapping()
+        .string_from_read(html_src.as_bytes(), 120)
+        .unwrap_or_default()
 }
 
 fn is_image_ext(ext: &str) -> bool {
@@ -614,4 +617,26 @@ fn ocr_image_to_pages(image: DynamicImage, config: &EncoderConfig) -> Result<Vec
 #[cfg(not(feature = "ocr"))]
 fn ocr_image_to_pages(_image: DynamicImage, _config: &EncoderConfig) -> Result<Vec<PageBuffer>> {
     Err(DcfError::OcrSupportDisabled)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::html_to_plaintext;
+
+    #[test]
+    fn html_links_have_no_footnotes_and_long_urls_stay_together() {
+        let long_url = format!("https://example.com/{}", "very/long/path/".repeat(5));
+        let html = format!(
+            "<p><a href=\"https://example.com/very/long/path\">Text</a></p><p>{long_url}</p>"
+        );
+
+        let plaintext = html_to_plaintext(&html);
+
+        assert!(plaintext.contains("Text"));
+        assert!(!plaintext.lines().any(|line| line.starts_with("[1]:")));
+        assert!(
+            plaintext.lines().any(|line| line.contains(&long_url)),
+            "rendered output: {plaintext:?}"
+        );
+    }
 }

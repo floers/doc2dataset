@@ -24,7 +24,7 @@ anyhow = "1"
 blake3 = "1"
 bytes = "1"
 hdrhistogram = "7"
-html2text = "0.5"
+html2text = "0.16"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "tiff", "bmp"] }
 hex = "0.4"
 itertools = "0.12"
