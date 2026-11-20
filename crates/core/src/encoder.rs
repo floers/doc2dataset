@@ -378,6 +378,22 @@ impl EncodeInput {
                 })
             }
             Some("pdf") => Self::from_pdf(path, config),
+            #[cfg(feature = "office")]
+            Some(ext) if crate::office::OfficeFormat::is_legacy_binary_extension(ext) => {
+                Err(crate::office::OfficeError::LegacyBinary.into())
+            }
+            #[cfg(feature = "office")]
+            Some(ext) if crate::office::OfficeFormat::from_extension(ext).is_some() => {
+                let text = crate::office::extract_path(path)?;
+                Ok(Self {
+                    pages: text
+                        .pages
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, page)| PageBuffer::from_text(idx as u32, page, config))
+                        .collect(),
+                })
+            }
             Some(ext) if is_image_ext(ext) => Self::from_image(path, config),
             None => {
                 let content = read_text_lossy(path)?;

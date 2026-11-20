@@ -8,7 +8,7 @@ A high-performance Rust library for encoding documents into structured datasets 
 
 ## Features
 
-- **Multi-format support**: PDF, Markdown, HTML, plain text, and images
+- **Multi-format support**: PDF, Markdown, HTML, plain text, images, and (feature `office`) docx, xlsx, pptx, odt, ods, odp, xls, rtf
 - **Structure preservation**: Maintains document hierarchy (headers, tables, code blocks)
 - **Token-aware**: Budget-based encoding with tiktoken-compatible token counting
 - **Deduplication**: Hash-based content deduplication across pages
@@ -115,7 +115,28 @@ for chunk in chunks {
 | `text` | Basic text processing (default) | - |
 | `pdfium` | Native PDF rendering | `pdfium-render` |
 | `ocr` | Tesseract OCR | `leptess` |
+| `office` | Office text extraction (see below), pure Rust | `zip`, `quick-xml`, `calamine` |
 | `full` | All features | All above |
+
+### Office documents (`office`)
+
+`EncodeInput::from_path` (and `three_dcf_core::office::extract` for bytes) reads `docx`, `xlsx`,
+`pptx`, `odt`, `ods`, `odp`, `xls` and `rtf` without LibreOffice or any C library. The text is
+Markdown-like and split into pages like the other inputs: a text document is one page, every sheet
+and every slide is a page (`## Sheet` / `# Slide title`, tables as `| a | b |` rows, slide notes
+after `Notizen:`). The title comes from the document metadata, else the first level-1 heading.
+Legacy binary `doc`/`ppt` fail with `OfficeError::LegacyBinary` (`DcfError::Office`).
+
+Untrusted files are expected. `OfficeLimits` (defaults): input 100 MiB, 10 000 zip entries, 64 MiB
+per entry and 256 MiB in total (measured while reading, declared sizes are not trusted), 4 MiB of
+output text, 500 sheets/slides, 10 000 rows and 200 000 non-empty cells per sheet, 2 000 characters
+per cell, XML nesting 512, RTF nesting 256. Exceeding an input/entry size or nesting limit is an
+error (`OfficeError::LimitExceeded`); exceeding a row/cell/output cap truncates the text and sets
+`OfficeText::truncated`. Encrypted files give `OfficeError::Encrypted`, broken ones
+`OfficeError::Malformed`; nothing panics. Known gaps: `xls` goes through `calamine`, which holds a
+sheet as a dense grid (a crafted file can claim up to 65 536 × 256 cells), spreadsheet dates are
+shown as stored numbers, RTF assumes Windows-1252 for `\'xx` escapes, and headers, footers,
+comments and footnotes are not extracted.
 
 ## Output Formats
 

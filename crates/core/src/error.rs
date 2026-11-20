@@ -28,6 +28,9 @@ pub enum DcfError {
     Bench(String),
     #[error("other: {0}")]
     Other(String),
+    #[cfg(feature = "office")]
+    #[error("office document: {0}")]
+    Office(#[from] crate::office::OfficeError),
 }
 
 pub type Result<T> = std::result::Result<T, DcfError>;

@@ -43,6 +43,7 @@
 //! - **`text`** (default): Basic text/markdown/HTML processing
 //! - **`pdfium`**: Native PDF rendering via pdfium for better extraction
 //! - **`ocr`**: Optical character recognition via Tesseract
+//! - **`office`**: Text extraction for docx, xlsx, pptx, odt, ods, odp, xls and rtf (pure Rust)
 //! - **`full`**: All features enabled
 //!
 //! ## Architecture
@@ -122,6 +123,9 @@ mod metrics;
 mod normalization;
 mod numguard;
 mod ocr;
+#[cfg(feature = "office")]
+#[cfg_attr(docsrs, doc(cfg(feature = "office")))]
+pub mod office;
 mod serializer;
 mod stats;
 
